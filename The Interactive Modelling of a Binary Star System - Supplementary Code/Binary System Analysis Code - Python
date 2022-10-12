@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Oct 12 19:59:07 2022
+
+@author: kame_chikara
+"""
+
+from vpython import *
+import numpy as np
+import matplotlib.pyplot as plt
+
+R1=6.371e6
+M1=5.972e24
+
+G=6.67e-11
+
+R2=1.7371e6
+M2=3.674e24
+
+R12=384400e3
+scale=6
+
+clst1 = sphere(pos=vector(0,0,0),radius=scale*R1, color=color.yellow, make_trail=True)
+
+clst2 = sphere(pos=clst1.pos+R12*vector(1,0,0),radius=3*scale*R2, color=color.white, make_trail=True)
+
+v0 = sqrt(G*M1/R12)
+clst2.p = M2*vector(0,v0,0)
+clst1.p = -clst2.p
+
+shuttle = sphere(pos=clst1.pos+R12*vector(0.5,-0.25,0), radius=scale*R2/2, color=color.cyan, make_trail=True)
+shuttle.m = 1e4
+vo0 = 6.2e1*1.005
+shuttle.p = shuttle.m*vo0*vector(0,1,0)
+
+t = 0
+dt = 1000
+timelimit = 1e6
+
+while t<timelimit:
+  rate(5000)
+  r12 = clst2.pos- clst1.pos
+  r1s = shuttle.pos - clst1.pos
+  r2s = shuttle.pos - clst2.pos
+  
+  F12 = -G*M2*M1*norm(r12)/mag(r12)**2
+  F1s = -G*M1*shuttle.m*norm(r1s)/mag(r1s)**2
+  F2s = -G*M2*shuttle.m*norm(r2s)/mag(r2s)**2
+  
+  clst2.p = clst2.p + F12*dt
+  clst1.p = clst1.p -F12*dt
+  shuttle.p = shuttle.p + (F1s + F2s)*dt
+  
+  clst2.pos = clst2.pos + clst2.p*dt/M2
+  clst1.pos = clst1.pos + clst1.p*dt/M1
+  shuttle.pos = shuttle.pos + shuttle.p*dt/shuttle.m
+  
+  x = np.linspace(0,0,1)
+  y = np.linspace(0,0,1)
+  (x,y) = np.meshgrid(x,y)
+  u = float(F1s.x+F2s.x)
+  v = float(F1s.y+F2s.y)
+  print((u,v))
+  plt.xlabel("Time = "+str(t)+"   X component of F-net on Helios-3 * 10^-2 (N)")
+  plt.ylabel("Y component of F-net on Helios-3 * 10^-2 (N)")
+  plt.quiver(x,y,u,v,color = "b")
+  plt.show()
+  
+  t = t + dt
